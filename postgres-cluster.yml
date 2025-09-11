@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: drone-pg-cluster
+spec:
+  instances: 1
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: 1Gi
+
+  # 'app' user will be created with connection details in a secret
+  # named {cluster-name}-app
+  bootstrap:
+    initdb:
+      database: dronedata
+      owner: app

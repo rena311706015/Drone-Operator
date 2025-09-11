@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drone Control Panel</title>
+    <style>
+        body { font-family: sans-serif; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .status-Idle { color: green; }
+        .status-In.Mission, .status-Checking { color: blue; }
+        .status-Malfunction, .status-Mission.Failed { color: red; font-weight: bold; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>Drone Status Dashboard</h1>
+    <table id="drone-table">
+        <thead>
+            <tr>
+                <th>DroneID</th>
+                <th>Status</th>
+                <th>Last Update Time</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <script>
+        const API_URL = 'http://localhost:5001';
+        let lastKnownDrones = null;
+        async function fetchDroneStatuses() {
+            try {
+                const response = await fetch(`${API_URL}/drones`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const drones = await response.json();
+
+                const newDronesString = JSON.stringify(drones);
+                const lastKnownDronesString = JSON.stringify(lastKnownDrones);
+
+                if (newDronesString !== lastKnownDronesString) {
+                    console.log("Data changed, updating table.");
+                    updateTable(drones);
+                    lastKnownDrones = drones; 
+                } else {
+                    console.log("No data change, skipping update.");
+                }
+            } catch (error) {
+                console.error("Failed to fetch drone statuses:", error);
+            }
+        }
+
+        function updateTable(drones) {
+            const tbody = document.querySelector("#drone-table tbody");
+            tbody.innerHTML = '';
+            drones.forEach(drone => {
+                const isIdle = drone.status === 'Idle';
+                const statusClass = `status-${drone.status.replace(/\s+/g, '.')}`;
+
+                const row = `
+                    <tr>
+                        <td>${drone.droneId}</td>
+                        <td class="${statusClass}">${drone.status}</td>
+                        <td>${drone.lastUpdateTime ? new Date(drone.lastUpdateTime).toLocaleString() : 'N/A'}</td>
+                        <td>
+                            <div>
+                                <input type="checkbox" id="coords-${drone.droneId}" ${!isIdle ? 'disabled' : ''}>
+                                <label for="coords-${drone.droneId}">Collect Coordinates</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="battery-${drone.droneId}" ${!isIdle ? 'disabled' : ''}>
+                                <label for="battery-${drone.droneId}">Collect Battery Data</label>
+                            </div>
+                            <button onclick="startMission('${drone.droneId}')" ${!isIdle ? 'disabled' : ''}>
+                                Start Mission
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function startMission(droneId) {
+            const collectCoordinates = document.getElementById(`coords-${droneId}`).checked;
+            const collectBattery = document.getElementById(`battery-${droneId}`).checked;
+
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Starting...';
+
+            try {
+                const response = await fetch(`${API_URL}/mission`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ droneId, collectCoordinates, collectBattery }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to start mission');
+                }
+                
+                fetchDroneStatuses();
+
+            } catch (error) {
+                console.error(`Error starting mission for ${droneId}:`, error);
+                alert(`Error: ${error.message}`);
+                button.disabled = false;
+                button.textContent = 'Start Mission';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDroneStatuses();
+            setInterval(fetchDroneStatuses, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: dronemissions.drone.example.com
+spec:
+  group: drone.example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                droneId:
+                  type: string
+                collectCoordinates:
+                  type: boolean
+                collectBattery:
+                  type: boolean
+              required: ["droneId"]
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: ["Pending", "HealthChecking", "InMission", "Succeeded", "Failed", "Malfunctioning"]
+                lastUpdateTime:
+                  type: string
+                  format: date-time
+                healthCheckJob:
+                  type: string
+                missionJobs:
+                  type: array
+                  items:
+                    type: string
+  scope: Namespaced
+  names:
+    plural: dronemissions
+    singular: dronemission
+    kind: DroneMission
+    shortNames:
+    - dm
