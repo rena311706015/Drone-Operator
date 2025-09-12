@@ -5,6 +5,23 @@ import base64
 import random
 from kubernetes import client
 
+EXIT_CODES = {}
+
+def get_exit_code(drone_id):
+    global EXIT_CODES
+
+    if drone_id not in EXIT_CODES:
+        EXIT_CODES[drone_id] = None
+
+    if EXIT_CODES[drone_id] is None:
+        EXIT_CODES[drone_id] = random.randint(0, 1)
+
+    return EXIT_CODES[drone_id]
+
+def reset_exit_code(drone_id):
+    global EXIT_CODES
+    EXIT_CODES[drone_id] = None
+
 # 與 ConfigMap 的 data: operator.py: 一致
 # --- 初始化 API Client ---
 def get_k8s_apis():
@@ -45,7 +62,6 @@ def reconcile_missions(spec, status, name, namespace, uid, logger, patch, **kwar
     apis = get_k8s_apis()
     phase = status.get('phase')
     drone_id = spec.get('droneId')
-    logger.info(f"phase = {phase}")
 
     # --- 狀態 1: 健康檢查 ---
     if phase == 'HealthChecking':
@@ -69,8 +85,7 @@ def reconcile_missions(spec, status, name, namespace, uid, logger, patch, **kwar
                 return
 
             # exit_code = cs[0].state.terminated.exit_code
-            exit_code = random.randint(0, 1)
-            logger.info(f"Health check for {drone_id} exit code = {exit_code}")
+            exit_code = get_exit_code(drone_id)
             if exit_code == 0:
                 logger.info(f"Health check for {drone_id} Succeeded. Starting mission jobs.")
 
@@ -98,7 +113,8 @@ def reconcile_missions(spec, status, name, namespace, uid, logger, patch, **kwar
                         apis, name, namespace, uid, battery_job_name, drone_id,
                         'python /app/collect_battery.py', db_host, db_name, db_user, db_password
                     )
-                if mission_jobs == []:
+                if not mission_jobs:
+                    logger.info(f"{drone_id} finish health checking, turning status to Idle...")
                     patch.status['phase'] = "Succeeded"
                     patch.status['lastUpdateTime'] = datetime.datetime.utcnow().isoformat() + "Z"
                 else: 
@@ -139,10 +155,10 @@ def reconcile_missions(spec, status, name, namespace, uid, logger, patch, **kwar
             patch.status['lastUpdateTime'] = datetime.datetime.utcnow().isoformat() + "Z"
 
     # --- 狀態 3: 清理 CR ---
-    elif phase in ['Succeeded', 'Failed', 'Malfunctioning']:
+    elif phase in ['Succeeded', 'Failed', 'Malfunctioning']:  
         logger.info(f"Mission for {drone_id} ended with phase '{phase}'. Cleaning up CR.")
-        # patch.status['phase'] = "Succeeded"
         patch.status['lastUpdateTime'] = datetime.datetime.utcnow().isoformat() + "Z"
+        reset_exit_code(drone_id)
         try:
             apis['custom'].delete_namespaced_custom_object(
                 group="drone.example.com", version="v1",

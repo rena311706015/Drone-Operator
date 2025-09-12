@@ -59,7 +59,7 @@
             const tbody = document.querySelector("#drone-table tbody");
             tbody.innerHTML = '';
             drones.forEach(drone => {
-                const isIdle = drone.status === 'Idle';
+                const isIdle = drone.status !== "Pending" && drone.status !== "Checking..." && drone.status !== "In Mission";
                 const statusClass = `status-${drone.status.replace(/\s+/g, '.')}`;
 
                 const row = `

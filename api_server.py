@@ -14,6 +14,8 @@ DRONES = {
     "D02": {"status": "Idle", "last_update_time": None},
     "D03": {"status": "Idle", "last_update_time": None},
 }
+# 全域記憶體快取，保存最後一次狀態
+LAST_STATUSES = {}
 
 def get_k8s_api():
     try:
@@ -36,8 +38,8 @@ def get_drone_statuses():
             version="v1",
             namespace="default",
             plural="dronemissions"
-        )
-
+        ) 
+        active_drones = set()
         for cr in cr_list.get('items', []):
             drone_id = cr['spec'].get('droneId')
             if drone_id in current_statuses:
@@ -54,8 +56,22 @@ def get_drone_statuses():
                     "Idle": "Idle"
                 }
                 
+                status_value = status_map.get(phase, "Unknown")
+                update_time = cr.get('status', {}).get('lastUpdateTime', '')
+
                 current_statuses[drone_id]['status'] = status_map.get(phase, "Unknown")
                 current_statuses[drone_id]['last_update_time'] = cr.get('status', {}).get('lastUpdateTime', '')
+                
+                # 更新快取
+                LAST_STATUSES[drone_id] = {
+                    "status": status_value,
+                    "last_update_time": update_time
+                }
+                active_drones.add(drone_id)
+
+        for drone_id in current_statuses:
+            if drone_id not in active_drones and drone_id in LAST_STATUSES:
+                current_statuses[drone_id] = LAST_STATUSES[drone_id]
 
     except client.ApiException as e:
         print(f"Error fetching CRs: {e}")
