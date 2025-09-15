@@ -22,7 +22,7 @@ def reset_exit_code(drone_id):
     global EXIT_CODES
     EXIT_CODES[drone_id] = None
 
-# 與 ConfigMap 的 data: operator.py: 一致
+# 與 operator-deployment.yaml 的 ConfigMap data: operator.py: 一致
 # --- 初始化 API Client ---
 def get_k8s_apis():
     try:

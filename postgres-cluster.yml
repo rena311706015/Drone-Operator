@@ -14,3 +14,18 @@ spec:
     initdb:
       database: dronedata
       owner: app
+      postInitApplicationSQL:
+        - |
+          CREATE TABLE IF NOT EXISTS coordinates (
+            id SERIAL PRIMARY KEY,
+            drone_id VARCHAR(50),
+            latitude FLOAT,
+            longitude FLOAT,
+            created_at TIMESTAMP DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS battery_logs (
+            id SERIAL PRIMARY KEY,
+            drone_id VARCHAR(50),
+            battery_level INT,
+            created_at TIMESTAMP DEFAULT NOW()
+          );

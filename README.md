@@ -16,12 +16,13 @@ Start Mission 後，根據 CRD 建立一個 CR，CRD 的 Operator 執行以下�
    `minikube start`  
 3. 切換到 minikube Docker  
    `eval $(minikube docker-env)`  
-4. 進入 missions 資料夾後 build Docker Image    
-   `docker build -t drone-worker:v1 .`  
+4. build Docker Image    
+   `docker build -t drone-worker:v1 missions`  
 5. apply CloudNativePG 提供的 Postgres Operator  
-   `kubectl apply --server-side -f \  
-   https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.0.yaml`  
-6. 確認 Postgres 相關 CRD 存在後，回到根目錄一次 apply Drone CRD、Drone Operator、和 Postgres CR 到 minikube 中  
+   `kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.0.yaml`  
+6. 確認 Postgres 相關 CRD 存在後  
+   `kubectl get crd`  
+   一次 apply Drone CRD、Drone Operator、和 Postgres CR 到 minikube 中  
    `kubectl apply -f .`     
 
 ## 驗證步驟
@@ -38,21 +39,7 @@ Start Mission 後，根據 CRD 建立一個 CR，CRD 的 Operator 執行以下�
    - 一個進入 Postgres 的 console
       `kubectl get secret drone-pg-cluster-app -o jsonpath="{.data.password}" | base64 --decode`  
       複製顯示的密碼後  
-      `kubectl exec -ti -n default drone-pg-cluster-1 -- psql -U app -d dronedata -h localhost -W`  
-      然後手動建立資料表
-      `CREATE TABLE IF NOT EXISTS coordinates (
-         id SERIAL PRIMARY KEY,
-         drone_id VARCHAR(50),
-         latitude FLOAT,
-         longitude FLOAT,
-         created_at TIMESTAMP DEFAULT NOW()
-      );`  
-      `CREATE TABLE IF NOT EXISTS battery_logs (
-         id SERIAL PRIMARY KEY,
-         drone_id VARCHAR(50),
-         battery_level INT,
-         created_at TIMESTAMP DEFAULT NOW()
-      );`  
+      `kubectl exec -ti -n default drone-pg-cluster-1 -- psql -U app -d dronedata -h localhost -W`
 3. 雙擊 index.html 開啟網頁前端 
 4. 網頁隨便勾選一個 Drone 的任務後 Start Mission  
 5. 觀察監控 Pod 和 監控 DroneMission 的兩個終端機  
