@@ -2,27 +2,8 @@ import kopf
 import kubernetes
 import datetime
 import base64
-import random
 from kubernetes import client
 
-EXIT_CODES = {}
-
-def get_exit_code(drone_id):
-    global EXIT_CODES
-
-    if drone_id not in EXIT_CODES:
-        EXIT_CODES[drone_id] = None
-
-    if EXIT_CODES[drone_id] is None:
-        EXIT_CODES[drone_id] = random.randint(0, 1)
-
-    return EXIT_CODES[drone_id]
-
-def reset_exit_code(drone_id):
-    global EXIT_CODES
-    EXIT_CODES[drone_id] = None
-
-# 與 operator-deployment.yaml 的 ConfigMap data: operator.py: 一致
 # --- 初始化 API Client ---
 def get_k8s_apis():
     try:
@@ -84,8 +65,8 @@ def reconcile_missions(spec, status, name, namespace, uid, logger, patch, **kwar
                 logger.info(f"Pod for {job_name} still running.")
                 return
 
-            # exit_code = cs[0].state.terminated.exit_code
-            exit_code = get_exit_code(drone_id)
+            exit_code = cs[0].state.terminated.exit_code
+            logger.info(f"exit_code = {exit_code}")
             if exit_code == 0:
                 logger.info(f"Health check for {drone_id} Succeeded. Starting mission jobs.")
 
@@ -158,7 +139,6 @@ def reconcile_missions(spec, status, name, namespace, uid, logger, patch, **kwar
     elif phase in ['Succeeded', 'Failed', 'Malfunctioning']:  
         logger.info(f"Mission for {drone_id} ended with phase '{phase}'. Cleaning up CR.")
         patch.status['lastUpdateTime'] = datetime.datetime.utcnow().isoformat() + "Z"
-        reset_exit_code(drone_id)
         try:
             apis['custom'].delete_namespaced_custom_object(
                 group="drone.example.com", version="v1",
@@ -193,7 +173,7 @@ def create_mission_job(apis, cr_name, namespace, uid, job_name,
                     "containers": [
                         {
                             "name": "mission-runner",
-                            "image": "drone-worker:v1",
+                            "image": "renawang0913/drone-worker:v1",
                             "command": ["/bin/bash", "-c"],
                             "args": [command],
                             "env": [

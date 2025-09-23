@@ -71,7 +71,8 @@ def get_drone_statuses():
 
         for drone_id in current_statuses:
             if drone_id not in active_drones and drone_id in LAST_STATUSES:
-                current_statuses[drone_id] = LAST_STATUSES[drone_id]
+                if current_statuses[drone_id]['status'] != LAST_STATUSES[drone_id]['status']:
+                    current_statuses[drone_id] = LAST_STATUSES[drone_id]
 
     except client.ApiException as e:
         print(f"Error fetching CRs: {e}")
@@ -110,7 +111,7 @@ def create_mission():
             "collectBattery": data.get('collectBattery', False),
         },
     }
-
+    print(f"{drone_id} Coordinates: {data.get('collectCoordinates', False)}, Battery: {data.get('collectBattery', False)}")
     try:
         api.create_namespaced_custom_object(
             group="drone.example.com",

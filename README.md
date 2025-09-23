@@ -13,14 +13,10 @@ Start Mission 後，根據 CRD 建立一個 CR，CRD 的 Operator 執行以下�
 
 1. 將此專案 clone 到本地端  
 2. 啟動 minikube  
-   `minikube start`  
-3. 切換到 minikube Docker  
-   `eval $(minikube docker-env)`  
-4. build Docker Image    
-   `docker build -t drone-worker:v1 missions`  
-5. apply CloudNativePG 提供的 Postgres Operator  
+   `minikube start`
+3. apply CloudNativePG 提供的 Postgres Operator  
    `kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.27/releases/cnpg-1.27.0.yaml`  
-6. 確認 Postgres 相關 CRD 存在後  
+4. 確認 Postgres 相關 CRD 存在後  
    `kubectl get crd`  
    一次 apply Drone CRD、Drone Operator、和 Postgres CR 到 minikube 中  
    `kubectl apply -f .`     
@@ -59,3 +55,10 @@ Start Mission 後，根據 CRD 建立一個 CR，CRD 的 Operator 執行以下�
    </div>
 
 
+## 補充
+  
+/missions 用來 build health check, coord-mission 和 battery-mission 的 Docker image  
+若有修改請重新 build image 後推到 Dockerhub，然後修改 /drone-operator/operator.py 裡 create_mission_job 使用的 image  
+
+/drone-operator 用來 build operator 的 Docker image  
+若有修改請重新 build image 後推到 Dockerhub，然後修改 operator-deploymentt.yaml 裡的 image  

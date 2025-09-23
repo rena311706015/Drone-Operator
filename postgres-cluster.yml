@@ -29,3 +29,5 @@ spec:
             battery_level INT,
             created_at TIMESTAMP DEFAULT NOW()
           );
+          ALTER TABLE coordinates OWNER TO app;
+          ALTER TABLE battery_logs OWNER TO app;
