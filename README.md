@@ -61,4 +61,4 @@ Start Mission 後，根據 CRD 建立一個 CR，CRD 的 Operator 執行以下�
 若有修改請重新 build image 後推到 Dockerhub，然後修改 /drone-operator/operator.py 裡 create_mission_job 使用的 image  
 
 /drone-operator 用來 build operator 的 Docker image  
-若有修改請重新 build image 後推到 Dockerhub，然後修改 operator-deploymentt.yaml 裡的 image  
+若有修改請重新 build image 後推到 Dockerhub，然後修改 operator-deployment.yaml 裡的 image  
