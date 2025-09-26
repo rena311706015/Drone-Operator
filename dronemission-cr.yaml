@@ -1,0 +1,8 @@
+apiVersion: drone.example.com/v1
+kind: DroneMission
+metadata:
+  name: dm-drone-01-abcde
+spec:
+  droneId: drone-01
+  collectCoordinates: true
+  collectBattery: true
